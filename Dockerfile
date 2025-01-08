@@ -1,17 +1,25 @@
-# Use the official NGINX base image
-FROM nginx:1.26
+# Use Alpine as the base image
+FROM nginx:stable-alpine
 
-# Copy the custom nginx.conf to the container
+# Add the Zscaler certificate
+# COPY ZscalerRootCA1.crt /usr/local/share/ca-certificates/my-cert.crt
+# RUN cat /usr/local/share/ca-certificates/my-cert.crt >> /etc/ssl/certs/ca-certificates.crt
+
+# Install runtime dependencies
+RUN apk --no-cache add apache2-utils openssl
+
+# Define a volume for WebDAV data
+VOLUME /webdav
+
+# Copy global NGINX configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create directories for webdav or logs if needed
-RUN mkdir -p /webdav /var/log/nginx
+# Copy the index.html to the /var/www/html directory
+COPY index.html /var/www/html/index.html
 
-# Optional: Set permissions for webdav directory
-RUN chown -R www-data:www-data /webdav
+# Copy the entrypoint script and make it executable
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Expose the HTTP port
-EXPOSE 80
-
-# Command to start NGINX
-CMD ["nginx", "-g", "daemon off;"]
+# Set the entrypoint script as the default command
+CMD ["/entrypoint.sh"]
